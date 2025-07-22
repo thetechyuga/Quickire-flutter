@@ -102,7 +102,8 @@ class ApplicationApiService {
   // Function to fetch and parse the data
   Future<ChartDataResponse> fetchApplicationData() async {
     final token = await _secureStorageService.readToken();
-
+    print(token);
+    print('$BASE_URL/applications/last7days/');
     final response = await http.get(
       Uri.parse('$BASE_URL/applications/last7days/'),
       headers: {
@@ -110,9 +111,11 @@ class ApplicationApiService {
       },
     );
 
+    print(response.body);
+
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);
-
+      print(data);
       // Lists to store dates and application counts
       List<String> dates = [];
       List<int> applicationCounts = [];

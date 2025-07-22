@@ -12,7 +12,8 @@ const FontWeight poppinsLight = FontWeight.w300;
 const FontWeight poppinsRegular = FontWeight.w400;
 const FontWeight poppinsSemiBold = FontWeight.w600;
 
-const String BASE_URL = "http://172.232.110.90:80";
+// const String BASE_URL = "http://172.232.110.90:80";
+const String BASE_URL = "http://147.93.103.103";
 const String IMAGE_URL = "http://172.232.110.90:80/var/www/quickhire";
 Uri termsUrl = Uri.parse(
   'http://172.232.110.90/terms-and-conditions/',
