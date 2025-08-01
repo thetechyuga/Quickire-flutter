@@ -26,13 +26,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final usernameTextController = TextEditingController();
   final passwordTextController = TextEditingController();
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  bool enableOTP = false;
+  String getOtpFromFields() => _controllers.map((c) => c.text).join();
+
+  void sendOTP() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      User user = User(
+          username: usernameTextController.text.trim(),
+          email: usernameTextController.text.trim(),
+          password: '');
+      AuthApiResponse apiResponse = await apiService.sendOTP(user.email);
+
+      if (apiResponse.success) {
+        setState(() {
+          enableOTP = true;
+        });
+      } else {
+        setState(() {
+          enableOTP = false;
+        });
+        showErrorDialog(
+          apiResponse.errorMessage ?? "Failed to login",
+        );
+      }
+    } else {
+      debugPrint('no success');
+    }
+  }
 
   void login() async {
     if (_formKey.currentState?.validate() ?? false) {
       User user = User(
           username: usernameTextController.text.trim(),
           email: usernameTextController.text.trim(),
-          password: passwordTextController.text.trim());
+          password: getOtpFromFields());
       AuthApiResponse apiResponse = await apiService.login(user);
 
       if (apiResponse.success) {
@@ -58,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: bgColor,
       appBar: myCustomAppBar(),
@@ -80,16 +112,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     left: 20.0,
                     top: 28.0,
                   ),
+                  // child: Text(
+                  //   'Your Username',
+                  //   style: TextStyle(
+                  //     color: primaryText,
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  // ),
                   child: Text(
-                    'Your Username',
+                    'Your Email',
                     style: TextStyle(
                       color: primaryText,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
+
                 CustomInputBox(
-                  hint: 'Enter your username',
+                  hint: 'Enter your Email',
                   svgIconPath: 'assets/icons/mail.svg',
                   enabled: true,
                   controller: usernameTextController,
@@ -97,54 +137,137 @@ class _LoginScreenState extends State<LoginScreen> {
                   hasFocus: false,
                   errorText: "username can't be empty",
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(
-                    left: 20.0,
-                    top: 28.0,
-                  ),
-                  child: Text(
-                    'Your Password',
-                    style: TextStyle(
-                      color: primaryText,
-                      fontWeight: poppinsSemiBold,
-                    ),
-                  ),
-                ),
-                CustomInputBox(
-                  hint: 'Enter your password',
-                  svgIconPath: 'assets/icons/ceye.svg',
-                  enabled: true,
-                  controller: passwordTextController,
-                  isPassword: true,
-                  hasFocus: false,
-                  errorText: "password can't be empty",
-                ),
-                TermsConditions(termsUrl: termsUrl, policyUrl: policyUrl),
                 Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16.0,
-                    right: 16.0,
-                    top: 8.0,
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 44),
-                      backgroundColor: primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    padding: EdgeInsets.only(
+                      left: 20.0,
+                      top: 28.0,
                     ),
-                    onPressed: login,
-                    child: const Text(
-                      'Log in',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16.0,
-                        color: whiteText,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 44),
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                  ),
+                      onPressed: login,
+                      child: !enableOTP
+                          ? const Text(
+                              'Send OTP',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16.0,
+                                color: whiteText,
+                              ),
+                            )
+                          : const Text(''),
+                    )),
+
+                enableOTP
+                    ? const Padding(
+                        padding: EdgeInsets.only(
+                          left: 20.0,
+                          top: 28.0,
+                        ),
+                        // child: Text(
+                        //   'Your Password',
+                        //   style: TextStyle(
+                        //     color: primaryText,
+                        //     fontWeight: poppinsSemiBold,
+                        //   ),
+                        // ),
+                        child: Text(
+                          'Enter OTP',
+                          style: TextStyle(
+                            color: primaryText,
+                            fontWeight: poppinsSemiBold,
+                          ),
+                        ),
+                      )
+                    : const SizedBox(
+                        width: 5,
+                      ),
+                // CustomInputBox(
+                //   hint: 'Enter your password',
+                //   svgIconPath: 'assets/icons/ceye.svg',
+                //   enabled: true,
+                //   controller: passwordTextController,
+                //   isPassword: true,
+                //   hasFocus: false,
+                //   errorText: "password can't be empty",
+                // ),
+                const SizedBox(
+                  height: 15,
                 ),
+                enableOTP
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(6, (index) {
+                          return Container(
+                            width: 44,
+                            height: 55,
+                            margin: const EdgeInsets.symmetric(horizontal: 5),
+                            child: TextFormField(
+                              controller: _controllers[index],
+                              focusNode: _focusNodes[index],
+                              maxLength: 1,
+                              onChanged: (val) {
+                                if (val.length == 1 && index < 5) {
+                                  _focusNodes[index + 1].requestFocus();
+                                } else if (val.isEmpty && index > 0) {
+                                  _focusNodes[index - 1].requestFocus();
+                                }
+                              },
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 18),
+                              decoration: InputDecoration(
+                                counterText: "",
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                contentPadding: const EdgeInsets.all(0),
+                              ),
+                            ),
+                          );
+                        }),
+                      )
+                    : const SizedBox(
+                        width: 5,
+                      ),
+                enableOTP
+                    ? Padding(
+                        padding: const EdgeInsets.only(
+                          left: 16.0,
+                          right: 16.0,
+                          top: 8.0,
+                        ),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 44),
+                            backgroundColor: primaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: login,
+                          child: const Text(
+                            'Log in',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16.0,
+                              color: whiteText,
+                            ),
+                          ),
+                        ),
+                      )
+                    : const SizedBox(
+                        width: 5,
+                      ),
+                TermsConditions(termsUrl: termsUrl, policyUrl: policyUrl),
+
                 const Padding(
                   padding: EdgeInsets.only(
                     top: 28.0,
@@ -282,4 +405,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

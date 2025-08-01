@@ -43,6 +43,7 @@ class AuthApiService {
 
   Future<AuthApiResponse> login(User user) async {
     try {
+      print('$BASE_URL/user-login/');
       final response = await http.post(
         Uri.parse('$BASE_URL/login/'),
         headers: {'Content-Type': 'application/json'},
@@ -69,6 +70,31 @@ class AuthApiService {
           return AuthApiResponse(success: true);
         }
         return AuthApiResponse(success: false);
+      }
+      final Map<String, dynamic> errorData = json.decode(response.body);
+      String errorMessage = errorData['detail'];
+
+      if (errorMessage == "No User matches the given query.") {
+        errorMessage = "User not found";
+      }
+
+      return AuthApiResponse(success: false, errorMessage: errorMessage);
+    } catch (e) {
+      return AuthApiResponse(success: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<AuthApiResponse> sendOTP(String email) async {
+    try {
+      print('$BASE_URL/login/');
+      final response = await http.post(
+        Uri.parse('$BASE_URL/login/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
       }
       final Map<String, dynamic> errorData = json.decode(response.body);
       String errorMessage = errorData['detail'];
